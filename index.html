@@ -139,6 +139,42 @@
       font-weight: 700;
     }
 
+
+    .radio-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .radio-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 48px;
+      border: 1px solid #d9dee8;
+      border-radius: 14px;
+      padding: 0 12px;
+      background: #fbfcfe;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      color: #374151;
+    }
+
+    .radio-card input {
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      margin: 0;
+      accent-color: #3156b7;
+    }
+
+    .radio-card:has(input:checked) {
+      border-color: #3156b7;
+      background: #eef2ff;
+      color: #1e3a8a;
+    }
+
     .notice {
       margin-top: 16px;
       padding: 14px 16px;
@@ -291,7 +327,7 @@
       <h1>기사 정산 자동 계산</h1>
       <p class="desc">
         고객이 낸 총 금액에서 부품비를 빼고, 기사 수수료율을 적용한 뒤,<br />
-        기사가 현장에서 이미 받은 현금을 차감하여 최종 지급/회수 금액을 계산합니다.
+        부품비 지출 주체와 현금 선수령액을 반영하여 최종 지급/회수 금액을 계산합니다.
       </p>
     </section>
 
@@ -306,7 +342,7 @@
             <div class="field">
               <label>총 고객 결제금액 <span class="hint">직접 입력</span></label>
               <div class="input-wrap">
-                <input id="totalAmount" type="text" inputmode="numeric" value="3,000,000" />
+                <input id="totalAmount" type="text" inputmode="numeric" value="" />
                 <span class="unit">원</span>
               </div>
             </div>
@@ -314,7 +350,7 @@
             <div class="field">
               <label>기사 현금 수령액 <span class="hint">기사가 이미 받은 돈</span></label>
               <div class="input-wrap">
-                <input id="cashReceived" type="text" inputmode="numeric" value="500,000" />
+                <input id="cashReceived" type="text" inputmode="numeric" value="" />
                 <span class="unit">원</span>
               </div>
             </div>
@@ -322,7 +358,7 @@
             <div class="field">
               <label>카드 결제금액 <span class="hint">회사로 들어올 돈</span></label>
               <div class="input-wrap">
-                <input id="cardAmount" type="text" inputmode="numeric" value="1,000,000" />
+                <input id="cardAmount" type="text" inputmode="numeric" value="" />
                 <span class="unit">원</span>
               </div>
             </div>
@@ -330,7 +366,7 @@
             <div class="field">
               <label>계산서/계좌입금 금액 <span class="hint">회사로 들어올 돈</span></label>
               <div class="input-wrap">
-                <input id="invoiceAmount" type="text" inputmode="numeric" value="1,500,000" />
+                <input id="invoiceAmount" type="text" inputmode="numeric" value="" />
                 <span class="unit">원</span>
               </div>
             </div>
@@ -338,15 +374,29 @@
             <div class="field">
               <label>부품비 <span class="hint">정산 전에 먼저 차감</span></label>
               <div class="input-wrap">
-                <input id="partsCost" type="text" inputmode="numeric" value="0" />
+                <input id="partsCost" type="text" inputmode="numeric" value="" />
                 <span class="unit">원</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>부품비 지출 주체 <span class="hint">누가 먼저 냈는지 선택</span></label>
+              <div class="radio-group">
+                <label class="radio-card">
+                  <input type="radio" name="partsPayer" value="company" checked />
+                  회사돈으로 지출
+                </label>
+                <label class="radio-card">
+                  <input type="radio" name="partsPayer" value="worker" />
+                  기사돈으로 지출
+                </label>
               </div>
             </div>
 
             <div class="field">
               <label>기사 수수료율 <span class="hint">관리자가 수정 가능</span></label>
               <div class="input-wrap">
-                <input id="commissionRate" type="text" inputmode="decimal" value="50" />
+                <input id="commissionRate" type="text" inputmode="decimal" value="" />
                 <span class="unit">%</span>
               </div>
             </div>
@@ -355,7 +405,7 @@
           <div id="error" class="error"></div>
 
           <div class="notice">
-            예시: 총 고객 결제금액을 300만원으로 직접 입력하고, 그중 기사가 현금 50만원을 이미 받았으며 기사 몫이 50%라면 기사 총 정산금은 150만원입니다. 이미 받은 50만원을 빼고 회사가 기사에게 100만원을 지급합니다.
+            예시: 총 고객 결제금액 300만원, 기사 현금 수령액 50만원, 기사 몫 50%라면 기사 총 정산금은 150만원입니다. 부품비를 기사가 자기돈으로 냈다면 기사에게 부품비 보전분이 추가되고, 회사돈으로 냈다면 회사가 부품비를 회수합니다.
           </div>
         </div>
       </div>
@@ -399,12 +449,17 @@
             <span class="name">부품비 회수분</span>
             <strong id="partsRecovery" class="value">0원</strong>
           </div>
+          <div class="row">
+            <span class="name">기사 부품비 보전분</span>
+            <strong id="partsReimbursement" class="value">0원</strong>
+          </div>
 
           <div class="formula">
             <b>계산식</b><br />
             정산 대상 금액 = 총 고객 결제금액 - 부품비<br />
             기사 총 정산금 = 정산 대상 금액 × 기사 수수료율<br />
-            최종 지급/회수 금액 = 기사 총 정산금 - 기사 현금 수령액
+            회사돈 지출: 최종 지급/회수 금액 = 기사 총 정산금 - 기사 현금 수령액<br />
+            기사돈 지출: 최종 지급/회수 금액 = 기사 총 정산금 + 부품비 - 기사 현금 수령액
           </div>
         </div>
       </div>
@@ -440,6 +495,11 @@
 
     const getNumber = (id) => parseNumber($(id).value);
 
+    const getPartsPayer = () => {
+      const checked = document.querySelector('input[name="partsPayer"]:checked');
+      return checked ? checked.value : "company";
+    };
+
     const formatInputWon = (id) => {
       const value = getNumber(id);
       $(id).value = Math.round(value).toLocaleString("ko-KR");
@@ -457,20 +517,25 @@
       const invoiceAmount = getNumber("invoiceAmount");
       const partsCost = getNumber("partsCost");
       const commissionRate = getNumber("commissionRate");
+      const partsPayer = getPartsPayer();
 
       const paymentSum = cashReceived + cardAmount + invoiceAmount;
       const settlementBase = Math.max(totalAmount - partsCost, 0);
       const workerSettlement = settlementBase * (commissionRate / 100);
-      const finalPayment = workerSettlement - cashReceived;
+      const partsRecovery = partsPayer === "company" ? partsCost : 0;
+      const partsReimbursement = partsPayer === "worker" ? partsCost : 0;
+      const workerReceivable = workerSettlement + partsReimbursement;
+      const finalPayment = workerReceivable - cashReceived;
       const companyExpectedReceived = cardAmount + invoiceAmount;
-      const companyFinalShare = settlementBase - workerSettlement;
+      const companyFinalShare = settlementBase - workerSettlement + partsRecovery;
 
       $("settlementBase").textContent = formatWon(settlementBase);
       $("workerSettlement").textContent = formatWon(workerSettlement);
       $("cashAlready").textContent = formatWon(cashReceived);
       $("companyReceived").textContent = formatWon(companyExpectedReceived);
       $("companyFinalShare").textContent = formatWon(companyFinalShare);
-      $("partsRecovery").textContent = formatWon(partsCost);
+      $("partsRecovery").textContent = formatWon(partsRecovery);
+      $("partsReimbursement").textContent = formatWon(partsReimbursement);
 
       const summaryBox = $("summaryBox");
       const statusPill = $("statusPill");
@@ -482,13 +547,15 @@
 
       if (finalPayment > 0) {
         summaryValue.textContent = formatWon(finalPayment);
-        summaryText.textContent = "회사가 기사에게 추가로 지급해야 하는 금액입니다.";
+        summaryText.textContent = partsPayer === "worker"
+          ? "기사 정산금에 기사 선지출 부품비를 더하고, 이미 받은 현금을 뺀 금액입니다."
+          : "기사 정산금에서 이미 받은 현금을 뺀 뒤, 회사가 기사에게 추가로 지급해야 하는 금액입니다.";
         statusPill.textContent = "지급대기";
       } else if (finalPayment < 0) {
         summaryBox.classList.add("negative");
         statusPill.classList.add("negative");
         summaryValue.textContent = formatWon(Math.abs(finalPayment));
-        summaryText.textContent = "기사가 회사에게 입금해야 하는 금액입니다.";
+        summaryText.textContent = "기사가 이미 받은 현금이 최종 받을 금액보다 많아 회사에게 입금해야 하는 금액입니다.";
         statusPill.textContent = "입금요청";
       } else {
         summaryBox.classList.add("zero");
@@ -526,6 +593,10 @@
 
     inputs.forEach((id) => {
       $(id).addEventListener("input", calculate);
+    });
+
+    document.querySelectorAll('input[name="partsPayer"]').forEach((input) => {
+      input.addEventListener("change", calculate);
     });
 
     ["totalAmount", "cashReceived", "cardAmount", "invoiceAmount", "partsCost"].forEach((id) => {
